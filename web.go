@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"path"
+	"path/filepath"
 	"strings"
 	"sync"
 )
@@ -23,6 +24,9 @@ type server struct {
 
 	// Data maps a given URI (the game) to all the resources for that game.
 	data map[string] map[string]interface{}
+
+	// Directory where files may be read from.
+	filePath string
 }
 
 // request wraps every object used to handle a received request.
@@ -50,6 +54,29 @@ func (s *server) Close() error {
 	}
 
 	return nil
+}
+
+// get_file returns the requested file from the file system. Only files
+// within the specified directory shall be retrieved.
+func (r *request) get_file() {
+	list := filepath.SplitList(r.s.filePath)
+	list = append(list, r.uri...)
+	file, err := filepath.Abs(filepath.Join(list...))
+	if err != nil {
+		serr := "Failed to resolve the requested file"
+		r.httpTextReply(http.StatusInternalServerError, serr)
+		log.Printf("[%s] %v - %s: %s (%+v)", r.req.Method, r.uri, r.req.RemoteAddr, serr, err)
+		return
+	}
+
+	// Since both paths are absolute, it's safe to check if file constains
+	// r.s.filePath, to ensure that the file is in the expected directory.
+	if !strings.HasPrefix(file, r.s.filePath) {
+		r.httpTextReply(http.StatusForbidden, "Cannot access relative paths")
+		log.Printf("[%s] %v - %s: 403", r.req.Method, r.uri, r.req.RemoteAddr)
+	}
+
+	http.ServeFile(r.w, r.req, file)
 }
 
 // get_tracker encode the requested game as a JSON and returns it. If a
@@ -233,9 +260,7 @@ func (s *server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		if len(r.uri) >= 2 && r.uri[0] == "tracker" {
 			r.get_tracker()
 		} else {
-			// TODO: handle retrieving files
-			r.httpTextReply(http.StatusNotImplemented, "Can't get files yet...")
-			log.Printf("[%s] %s - %s: 501", req.Method, uri, req.RemoteAddr)
+			r.get_file()
 		}
 	case http.MethodPost:
 		r.post_tracker()
@@ -290,12 +315,17 @@ func writeData(data []byte, w io.Writer) {
 // be stopped.
 func RunWeb(args Args) io.Closer {
 	var srv server
+	var err error
 
 	srv.httpServer = &http.Server {
 		Addr: fmt.Sprintf("%s:%d", args.IP, args.Port),
 		Handler: &srv,
 	}
 	srv.data = make(map[string] map[string]interface{})
+	srv.filePath, err = filepath.Abs(args.ResDir)
+	if err != nil {
+		log.Fatalf("Couldn't resolve the resource directory: %+v", err)
+	}
 
 	go func() {
 		log.Printf("Waiting...")

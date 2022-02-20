@@ -12,6 +12,8 @@ type Args struct {
 	IP string
 	// Port on which the server will accept connections. Defaults to 8000.
 	Port int
+	// Resource directory where files may be read from. Defaults to 'res/'.
+	ResDir string
 }
 
 // parseAndMergeFile reads the given file and merge it with the previously
@@ -33,6 +35,9 @@ func parseAndMergeFile(args *Args, def Args, f *os.File) {
 	}
 	if jsonArgs.Port == 0 {
 		jsonArgs.Port = def.Port
+	}
+	if len(jsonArgs.ResDir) == 0 {
+		jsonArgs.ResDir = def.ResDir
 	}
 
 	// Walk over every set argument to override the JSON file
@@ -58,6 +63,10 @@ func parseAndMergeFile(args *Args, def Args, f *os.File) {
 			val, _ := get.Get().(int)
 			log.Printf("Overriding JSON's Port (%+v) with CLI's value (%+v)", jsonArgs.Port, val)
 			jsonArgs.Port = val
+		case "ResDir":
+			val, _ := get.Get().(string)
+			log.Printf("Overriding JSON's ResDir (%+v) with CLI's value (%+v)", jsonArgs.ResDir, val)
+			jsonArgs.ResDir = val
 		}
 	})
 
@@ -73,11 +82,13 @@ func parseArgs() Args {
 	defArgs := Args {
 		IP: "127.0.0.1",
 		Port: 8000,
+		ResDir: "res/",
 	}
 	const defaultConfFile = "config.json"
 
 	flag.StringVar(&args.IP, "IP", defArgs.IP, "IP on which the server will accept connections")
 	flag.IntVar(&args.Port, "Port", defArgs.Port, "Port on which the server will accept connections")
+	flag.StringVar(&args.ResDir, "ResDir", defArgs.ResDir, "Resource directory where files may be read from")
 	flag.StringVar(&confFile, "confFile", defaultConfFile, "JSON file with the configuration options. May be overriden by other CLI arguments")
 	flag.Parse()
 
@@ -96,6 +107,7 @@ func parseArgs() Args {
 	log.Printf("Starting server with options:")
 	log.Printf("  - IP: %+v", args.IP)
 	log.Printf("  - Port: %+v", args.Port)
+	log.Printf("  - ResDir: %+v", args.ResDir)
 
 	return args
 }
