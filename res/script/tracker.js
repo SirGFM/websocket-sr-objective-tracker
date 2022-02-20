@@ -19,6 +19,13 @@ let tracker = function() {
 		else if (value === false) {
 			obj.style.visibility = 'hidden';
 		}
+		else if (typeof value === 'string' || value instanceof String) {
+			if (! 'innerText' in obj) {
+				console.log(`Can't assign a text to element "${key}"!`);
+				return
+			}
+			obj.innerText = value;
+		}
 		else {
 			/* TODO: Handle custom values */
 			console.log(`Can't handle value "${value}" for object "${key}" (yet!)`);
