@@ -47,6 +47,7 @@
 			}
 		</style>
 
+		<script type="text/javascript" src="/script/ws-tracker.js"></script>
 		<script type="text/javascript" src="/script/pool-data.js"></script>
 		<script type="text/javascript" src="/script/tracker.js"></script>
 
@@ -55,8 +56,10 @@
              * Bootstrap, after the page is loaded.
              */
             document.addEventListener("DOMContentLoaded", function (event) {
+				/* Syncronize the page with the server. */
+				pool.updatePage('/tracker/example');
 				/* Start tracking the resource. */
-				pool.startTracking('/tracker/example', 10);
+				ws_tracker.startTracking('/ws-tracker/example');
             })
 		</script>
 	</head>

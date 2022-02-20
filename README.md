@@ -10,12 +10,14 @@ A generic tracker viewable in your browser that can be updated automatically by 
 To cross-compile for Windows from Linux, run:
 
 ```bash
+go get -d github.com/gorilla/websocket
 GOOS=windows go build .
 ```
 
 To build natively, simply run
 
 ```bash
+go get github.com/gorilla/websocket
 go build .
 ```
 
@@ -89,6 +91,7 @@ To exemplify how this tracker may be used, see `res/example/index.html`, a "trac
 Start by compiling and launching the server:
 
 ```
+go get github.com/gorilla/websocket
 go build .
 ./websocket-sr-objective-tracker
 ```

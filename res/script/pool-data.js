@@ -61,6 +61,24 @@ let pool = function() {
 	}
 
 	/**
+	 * Update the current page with the server's contents.
+	 *
+	 * @param{uri} HTTP address of the tracking resource.
+	 */
+	function _updatePage(uri) {
+		_getData(uri, function(ev) {
+			try {
+				let res = JSON.parse(ev);
+
+				tracker.setObject(res);
+			} catch (e) {
+				console.log(`Failed to parse "${uri}"`);
+				console.log(e);
+			}
+		});
+	}
+
+	/**
 	 * Start pooling and updating the current page.
 	 *
 	 * @param{uri} HTTP address of the tracking resource.
@@ -70,16 +88,7 @@ let pool = function() {
 		_stopTracking();
 
 		let fn = function() {
-			_getData(uri, function(ev) {
-				try {
-					let res = JSON.parse(ev);
-
-					tracker.setObject(res);
-				} catch (e) {
-					console.log(`Failed to parse "${uri}"`);
-					console.log(e);
-				}
-			});
+			_updatePage(uri);
 		}
 		_interval = setInterval(fn, 1000 / fps);
 	}
@@ -88,5 +97,6 @@ let pool = function() {
 		'getData': _getData,
 		'startTracking': _startTracking,
 		'stopTracking': _stopTracking,
+		'updatePage': _updatePage,
 	}
 }()

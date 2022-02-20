@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	gows "github.com/gorilla/websocket"
 	"io"
 	"log"
 	"net/http"
@@ -24,6 +25,9 @@ type server struct {
 
 	// Data maps a given URI (the game) to all the resources for that game.
 	data map[string] map[string]interface{}
+
+	// Stores every connection to a given tracker.
+	conns map[string][]*gows.Conn
 
 	// Directory where files may be read from.
 	filePath string
@@ -159,7 +163,52 @@ func (s *server) set_value(key, id string, value interface{}) {
 	log.Printf("[%s]: %s=%v\n", key, id, value)
 	game[id] = value
 
-	// TODO: Send this value over a websocket
+	// Send this value over a websocket
+	arr, ok := s.conns[key]
+	if !ok {
+		// No WebSocket connection for this game...
+		return
+	}
+
+	payload := struct {
+		ID string `json:"id"`
+		Value interface{} `json:"value"`
+	} {
+		ID: id,
+		Value: value,
+	}
+	data, err := json.Marshal(&payload)
+	if err != nil {
+		log.Printf("Couldn't encode the new data to JSON: (id: %s, value: %+v) %+v", id, value, err)
+		return
+	}
+
+	// Try to send the message to every connected client, and list the
+	// ones that failed to receive the message
+	rem := []int{}
+	for i, conn := range arr {
+		err = conn.WriteMessage(gows.TextMessage, data)
+		if err != nil {
+			rem = append(rem, i)
+		}
+	}
+
+	// Remove any connections that failed to send a message
+	for len(rem) > 0 {
+		i := rem[len(rem)-1]
+
+		conn := arr[i]
+
+		// Remove the connection from the array
+		tmp := arr[:i]
+		tmp = append(tmp, arr[i+1:]...)
+		arr = tmp
+
+		conn.Close()
+
+		rem = rem[:len(rem)-1]
+	}
+	s.conns[key] = arr
 }
 
 // post_tracker create or update a value for a given game. The value may
@@ -228,6 +277,26 @@ func (r *request) reply_no_content() {
 	r.w.WriteHeader(http.StatusNoContent)
 }
 
+// upgrade_ws upgrade the received request to a WebSocket connection.
+func (r *request) upgrade_ws() {
+	key := r.uri[1]
+
+	upgrader := gows.Upgrader {}
+	conn, err := upgrader.Upgrade(r.w, r.req, nil)
+	if err != nil {
+		log.Printf("[%s] %s - %s: Failed to upgrade the WebSocket connection: %+v", r.req.Method, key, r.req.RemoteAddr, err)
+		return
+	}
+
+	r.s.mutex.Lock()
+	arr := r.s.conns[key]
+	arr = append(arr, conn)
+	r.s.conns[key] = arr
+	r.s.mutex.Unlock()
+	log.Printf("[] %s - %s: New WebSocket connection!", key, r.req.RemoteAddr)
+	return
+}
+
 // ServeHTTP is called by Go's http package whenever a new HTTP request arrives.
 func (s *server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	uri := cleanURL(req.URL)
@@ -253,6 +322,11 @@ func (s *server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	} else if len(res) == 0 && req.Method == http.MethodGet {
 		// For GET requests, default to page index.html
 		r.uri = []string{"index.html"}
+	}
+
+	if len(r.uri) == 2 && r.uri[0] == "ws-tracker" {
+		r.upgrade_ws()
+		return
 	}
 
 	switch req.Method {
@@ -322,6 +396,7 @@ func RunWeb(args Args) io.Closer {
 		Handler: &srv,
 	}
 	srv.data = make(map[string] map[string]interface{})
+	srv.conns = make(map[string][]*gows.Conn)
 	srv.filePath, err = filepath.Abs(args.ResDir)
 	if err != nil {
 		log.Fatalf("Couldn't resolve the resource directory: %+v", err)
