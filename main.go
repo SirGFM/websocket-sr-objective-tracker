@@ -14,10 +14,11 @@ func startServer() {
 	intHndlr := make(chan os.Signal, 1)
 	signal.Notify(intHndlr, os.Interrupt)
 
-	// TODO: Actually start the server
+	closer := RunWeb(args)
 
 	<-intHndlr
 	log.Printf("Exiting...")
+	closer.Close()
 }
 
 func main() {
