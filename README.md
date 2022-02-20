@@ -2,6 +2,23 @@
 
 A generic tracker viewable in your browser that can be updated automatically by other tools!
 
+## Quick start
+
+* Requirements: [Golang](https://go.dev/dl/)
+	* This was built and tested with Go 1.17.6, but it should work with any more recent version.
+
+To cross-compile for Windows from Linux, run:
+
+```bash
+GOOS=windows go build .
+```
+
+To build natively, simply run
+
+```bash
+go build .
+```
+
 ## Core concept
 
 This tracker has a few components:
@@ -64,3 +81,35 @@ curl -X DELETE http://localhost:8000/tracker/dummy-game/key-item-3
 ```
 
 An application that want to update the tracker automatically would need to use some HTTP binding for the language, such as [`requests`](https://docs.python-requests.org/en/latest/) for Python or [`System.Net.Http.HttpClient`](https://docs.microsoft.com/en-us/dotnet/api/system.net.http.httpclient) for C#.
+
+## Example
+
+To exemplify how this tracker may be used, see `res/example/index.html`, a "tracker" for rainbow-colored orbs (taken from my [LD#32 entry](https://github.com/sirgfm/ld32)).
+
+Start by compiling and launching the server:
+
+```
+go build .
+./websocket-sr-objective-tracker
+```
+
+This tracker has 7 objectives:
+
+* `red`
+* `orange`
+* `yellow`
+* `green`
+* `cyan`
+* `blue`
+* `purple`
+
+You may use the simple python script `simple-request.py` to send requests to the server:
+
+```bash
+# set the red orb objective
+python3 simple-request.py localhost:8000 /tracker/example/red
+# remove the red orb objective
+python3 simple-request.py localhost:8000 /tracker/example/red DELETE
+```
+
+To visualize the changes live, simply access its page (http://localhost:8000/example) on a browser.

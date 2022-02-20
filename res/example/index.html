@@ -1,0 +1,102 @@
+<html>
+	<head>
+		<title> Example tracker </title>
+		<meta charset="utf-8" name="viewport" content="width=148, height=76, initial-scale=1" />
+		<meta name="keywords" content="stream,randomizer,tracker" />
+		<meta name="description" content="Example tracker page" />
+		<meta name="author" content="Gabriel Francisco Mandaji" />
+
+		<style>
+			div {
+                position: fixed;
+			}
+
+			.pixelated {
+				/** Basic nearest-neighbour behaviour.
+				 * Source: http://stackoverflow.com/questions/14068103/disable-antialising-when-scaling-images */
+				image-rendering: optimizeSpeed;             /* STOP SMOOTHING, GIVE ME SPEED  */
+				image-rendering: -moz-crisp-edges;          /* Firefox                        */
+				image-rendering: -o-crisp-edges;            /* Opera                          */
+				image-rendering: -webkit-optimize-contrast; /* Chrome (and eventually Safari) */
+				image-rendering: pixelated;                 /* Chrome */
+				image-rendering: optimize-contrast;         /* CSS3 Proposed                  */
+				-ms-interpolation-mode: nearest-neighbor;   /* IE8+                           */
+			}
+
+			div.bg {
+                /* Fixed position (unchanged by viewport size). Can be used as
+                 * parent for other elements */
+                position: fixed;
+
+				width: 148px;
+				height: 76px;
+				background-image: url("/example/img/bg.png");
+				background-size: contain;
+			}
+
+			img.icon {
+                /* Fixed position (unchanged by viewport size), but contained
+                 * and relative to its closest parent. */
+                position: absolute;
+
+				/** Have everything hidden by default. */
+				visibility: hidden;
+
+				width: 32px;
+				height: 32px;
+			}
+		</style>
+
+		<script type="text/javascript" src="/script/pool-data.js"></script>
+		<script type="text/javascript" src="/script/tracker.js"></script>
+
+		<script>
+            /**
+             * Bootstrap, after the page is loaded.
+             */
+            document.addEventListener("DOMContentLoaded", function (event) {
+				/* Start tracking the resource. */
+				pool.startTracking('/tracker/example', 10);
+            })
+		</script>
+	</head>
+
+	<body>
+		<div class='bg pixelated'>
+			<img class='icon pixelated'
+				style='left: 4px; top: 4px;'
+				id='red'
+				src='/example/img/red.gif' />
+
+			<img class='icon pixelated'
+				style='left: 40px; top: 4px;'
+				id='orange'
+				src='/example/img/orange.gif' />
+
+			<img class='icon pixelated'
+				style='left: 76px; top: 4px;'
+				id='yellow'
+				src='/example/img/yellow.gif' />
+
+			<img class='icon pixelated'
+				style='left: 112px; top: 4px;'
+				id='green'
+				src='/example/img/green.gif' />
+
+			<img class='icon pixelated'
+				style='left: 16px; top: 40px;'
+				id='cyan'
+				src='/example/img/cyan.gif' />
+
+			<img class='icon pixelated'
+				style='left: 56px; top: 40px;'
+				id='blue'
+				src='/example/img/blue.gif' />
+
+			<img class='icon pixelated'
+				style='left: 100px; top: 40px;'
+				id='purple'
+				src='/example/img/purple.gif' />
+		</div>
+	</body>
+</html>
