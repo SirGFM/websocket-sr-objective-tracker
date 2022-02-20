@@ -1,0 +1,463 @@
+<html>
+	<head>
+		<title> Momodora: Reverie Under the Moonlight tracker </title>
+		<meta charset="utf-8" name="viewport" content="width=610, height=462, initial-scale=1" />
+		<meta name="keywords" content="stream,randomizer,tracker" />
+		<meta name="description" content="Example tracker page" />
+		<meta name="author" content="Gabriel Francisco Mandaji" />
+
+		<style>
+			body {
+				background-color: #200010;
+			}
+
+			.pixelated {
+				/** Basic nearest-neighbour behaviour.
+				 * Source: http://stackoverflow.com/questions/14068103/disable-antialising-when-scaling-images */
+				image-rendering: optimizeSpeed;				/* STOP SMOOTHING, GIVE ME SPEED  */
+				image-rendering: -moz-crisp-edges;			/* Firefox */
+				image-rendering: -o-crisp-edges;			/* Opera */
+				image-rendering: -webkit-optimize-contrast;	/* Chrome (and eventually Safari) */
+				image-rendering: pixelated;					/* Chrome */
+				image-rendering: optimize-contrast;			/* CSS3 Proposed */
+				-ms-interpolation-mode: nearest-neighbor;	/* IE8+ */
+			}
+
+			div {
+				/* Fixed position (unchanged by viewport size). Can be used as
+				 * parent for other elements */
+				position: fixed;
+
+				width: 592px;
+				height: 444px;
+			}
+
+			div.bg {
+				filter: brightness(0.6);
+			}
+
+			img.icon {
+				/* Fixed position (unchanged by viewport size), but contained
+				 * and relative to its closest parent. */
+				position: absolute;
+
+				width: 72px;
+				height: 72px;
+			}
+
+			label.icon {
+				/* Fixed position (unchanged by viewport size), but contained
+				 * and relative to its closest parent. */
+				position: absolute;
+
+				width: 72px;
+				height: 72px;
+
+				display: inline-flex;
+				/* Align at the bottom. */
+				align-items: end;
+				/* Align at the right. */
+				justify-content: end;
+				font-size: 2.5em;
+				color: white;
+				/* Add a (simulated) outline) */
+				text-shadow:
+					-1px -1px 0 #000,
+					 1px -1px 0 #000,
+					-1px  1px 0 #000,
+					 1px  1px 0 #000;
+			}
+		</style>
+
+		<script type="text/javascript" src="/script/ws-tracker.js"></script>
+		<script type="text/javascript" src="/script/pool-data.js"></script>
+		<script type="text/javascript" src="/script/tracker.js"></script>
+
+		<script>
+			/* List of images, in the sequence they appear in the tracker.
+			 * These are only "pure" images, i.e., resources that are only
+			 * activated or deactivated. For numeric resources, see the
+			 * list bellow. */
+			let imgs = [
+				{
+					'name': 'AdornedRing',
+					'id': '1',
+					'img': 'AdornedRing.png',
+				},
+				{
+					'name': 'NecklaceOfSacrifice',
+					'id': '2',
+					'img': 'NecklaceOfSacrifice.png',
+				},
+				{
+					'name': 'Bellflower',
+					'id': '4',
+					'img': 'Bellflower.png',
+				},
+				{
+					'name': 'AstralCharm',
+					'id': '5',
+					'img': 'AstralCharm.png',
+				},
+				{
+					'name': 'EdeaPearl',
+					'id': '6',
+					'img': 'EdeaPearl.png',
+				},
+				{
+					'name': 'DullPearl',
+					'id': '7',
+					'img': 'DullPearl.png',
+				},
+				{
+					'name': 'RedRing',
+					'id': '8',
+					'img': 'RedRing.png',
+				},
+				{
+					'name': 'MagnetStone',
+					'id': '9',
+					'img': 'MagnetStone.png',
+				},
+				{
+					'name': 'RottenBellflower',
+					'id': '10',
+					'img': 'RottenBellflower.png',
+				},
+				{
+					'name': 'FaerieTear',
+					'id': '11',
+					'img': 'FaerieTear.png',
+				},
+				{
+					'name': 'ImpurityFlask',
+					'id': '13',
+					'img': 'ImpurityFlask.png',
+				},
+				{
+					'name': 'Passiflora',
+					'id': '14',
+					'img': 'Passiflora.png',
+				},
+				{
+					'name': 'CrystalSeed',
+					'id': '15',
+					'img': 'CrystalSeed.png',
+				},
+				{
+					'name': 'MedalOfEquivalence',
+					'id': '16',
+					'img': 'MedalOfEquivalence.png',
+				},
+				{
+					'name': 'TaintedMissive',
+					'id': '17',
+					'img': 'TaintedMissive.png',
+				},
+				{
+					'name': 'BlackSachet',
+					'id': '18',
+					'img': 'BlackSachet.png',
+				},
+				{
+					'name': 'RingOfCandor',
+					'id': '21',
+					'img': 'RingOfCandor.png',
+				},
+				{
+					'name': 'SmallCoin',
+					'id': '22',
+					'img': 'SmallCoin.png',
+				},
+				{
+					'name': 'BackmanPatch',
+					'id': '23',
+					'img': 'BakmanPatch.png',
+				},
+				{
+					'name': 'CatSphere',
+					'id': '24',
+					'img': 'CatSphere.png',
+				},
+				{
+					'name': 'HazelBadge',
+					'id': '25',
+					'img': 'HazelBadge.png',
+				},
+				{
+					'name': 'TornBranch',
+					'id': '26',
+					'img': 'TornBranch.png',
+				},
+				{
+					'name': 'MonasteryKey',
+					'id': '27',
+					'img': 'MonasteryKey.png',
+				},
+				{
+					'name': 'ClarityShard',
+					'id': '31',
+					'img': 'ClarityShard.png',
+				},
+				{
+					'name': 'DirtyShroom',
+					'id': '32',
+					'img': 'DirtyShroom.png',
+				},
+				{
+					'name': 'VioletSprite',
+					'id': '35',
+					'img': 'VioletSprite.png',
+				},
+				{
+					'name': 'SoftTissue',
+					'id': '36',
+					'img': 'SoftTissue.png',
+				},
+				{
+					'name': 'GardenKey',
+					'id': '37',
+					'img': 'GardenKey.png',
+				},
+				{
+					'name': 'SparseThread',
+					'id': '38',
+					'img': 'SparseThread.png',
+				},
+				{
+					'name': 'BlessingCharm',
+					'id': '39',
+					'img': 'BlessingCharm.png',
+				},
+				{
+					'name': 'HeavyArrows',
+					'id': '40',
+					'img': 'HeavyArrows.png',
+				},
+				{
+					'name': 'BloodstainedTissue',
+					'id': '41',
+					'img': 'BloodstainedTissue.png',
+				},
+				{
+					'name': 'MapleLeaf',
+					'id': '42',
+					'img': 'MapleLeaf.png',
+				},
+				{
+					'name': 'FreshSpringLeaf',
+					'id': '43',
+					'img': 'FreshSpringLeaf.png',
+				},
+				{
+					'name': 'PocketIncensory',
+					'id': '44',
+					'img': 'PocketIncensory.png',
+				},
+				{
+					'name': 'Birthstone',
+					'id': '45',
+					'img': 'Birthstone.png',
+				},
+				{
+					'name': 'QuickArrows',
+					'id': '46',
+					'img': 'QuickArrows.png',
+				},
+				{
+					'name': 'DrillingArrows',
+					'id': '47',
+					'img': 'DrillingArrows.png',
+				},
+				{
+					'name': 'SealedWind',
+					'id': '48',
+					'img': 'SealedWind.png',
+				},
+				{
+					'name': 'CinderKey',
+					'id': '49',
+					'img': 'CinderKey.png',
+				},
+				{
+					'name': 'FragmentBowPow',
+					'id': '50',
+					'img': 'FragmentBowPow.png',
+				},
+				{
+					'name': 'FragmentBowQuick',
+					'id': '51',
+					'img': 'FragmentBowQuick.png',
+				},
+				{
+					'name': 'FragmentDash',
+					'id': '52',
+					'img': 'FragmentDash.png',
+				},
+				{
+					'name': 'FragmentWarp',
+					'id': '53',
+					'img': 'FragmentWarp.png',
+				}
+			];
+
+			/* List of icons with a text on top of it. The text may be
+			 * accessed on the same ID as the image, but appending '-text'
+			 * at the end. */
+			let text = [
+				{
+					'name': 'VitalityFragment',
+					'id': '54',
+					'img': 'VitalityFragment.png',
+				},
+				{
+					'name': 'IvoryBug',
+					'id': '34',
+					'img': 'IvoryBug.png',
+				},
+			];
+
+			/**
+			 * Create a new image at the given position and within the
+			 * given container.
+			 *
+			 * Images with an ID will be hidden by default, as they may be
+			 * enabled with a request.
+			 *
+			 * Also, note that the position is relative to the element's
+			 * parent.
+			 *
+			 * @param{x} The horizontal position of the element.
+			 * @param{y} The vertical position of the element.
+			 * @param{icon} An object describing this image (see the lists above).
+			 * @param{bg} The image's parent.
+			 * @param{has_id} Whether this image has an ID or not.
+			 */
+			let create_img_at = function(x, y, icon, bg, has_id) {
+				let img = document.createElement('img');
+
+				img.className = 'icon pixelated';
+				if (has_id) {
+					img.id = icon.id;
+					img.style.visibility = 'hidden';
+				}
+				img.src = '/momo4/img/' + icon.img;
+				img.style.left = x + 'px';
+				img.style.top = y + 'px';
+				bg.appendChild(img);
+			}
+
+			/**
+			 * Create a new image, with a label on top of it, at the given
+			 * position and within the given container.
+			 *
+			 * Images with an ID will be hidden by default, as they may be
+			 * enabled with a request. To set the image's label, a request
+			 * must first be made to enable to resource, then another
+			 * request shoulb be made to set the value, at '<id>-text'.
+			 *
+			 * Also, note that the position is relative to the element's
+			 * parent.
+			 *
+			 * @param{x} The horizontal position of the element.
+			 * @param{y} The vertical position of the element.
+			 * @param{icon} An object describing this image (see the lists above).
+			 * @param{bg} The image's parent.
+			 * @param{has_id} Whether this image has an ID or not.
+			 */
+			let create_label_at = function(x, y, icon, bg, has_id) {
+				let label = document.createElement('label');
+
+				label.className = 'icon';
+				if (has_id) {
+					label.id = icon.id;
+				}
+				label.innerText = '0 ';
+				label.style.left = x + 'px';
+				label.style.top = y + 'px';
+				bg.appendChild(label);
+			}
+
+
+			/**
+			 * Bootstrap, after the page is loaded.
+			 */
+			document.addEventListener("DOMContentLoaded", function (event) {
+				let bg = document.getElementById('bg');
+				let fg = document.getElementById('fg');
+
+				let max_w = 8;
+				let img_w = 72;
+				let img_h = 72;
+
+				let i = 0;
+				let j = 0;
+				for (idx in imgs) {
+					let icon = imgs[idx];
+
+					let x = (2 + i * (img_w + 2));
+					let y = (2 + j * (img_h + 2));
+					create_img_at(x, y, icon, bg, false);
+					create_img_at(x, y, icon, fg, true);
+
+					i++;
+					if (i >= max_w) {
+						i = 0;
+						j++;
+					}
+				}
+
+				for (idx in text) {
+					let icon = text[idx];
+
+					let x = (2 + i * (img_w + 2));
+					let y = (2 + j * (img_h + 2));
+					create_img_at(x, y, icon, bg, false);
+					create_img_at(x, y, icon, fg, true);
+
+					/* Create a copy of the icon, so the original array
+					 * isn't modified. */
+					icon_copy = JSON.parse(JSON.stringify(icon));
+
+					icon_copy.id += '-text';
+					create_label_at(x-8, y, icon_copy, fg, true);
+
+					i++;
+					if (i >= max_w) {
+						i = 0;
+						j++;
+					}
+				}
+
+				/* Set the callback used to clear everything. */
+				ws_tracker.setClearFunction(function() {
+					for (idx in imgs) {
+						let icon = imgs[idx];
+
+						tracker.setValue(icon.id, false);
+					}
+					for (idx in text) {
+						let icon = text[idx];
+
+						tracker.setValue(icon.id, false);
+						tracker.setValue(icon.id + '-text', '0');
+					}
+				});
+				/* Syncronize the page with the server. */
+				pool.updatePage('/tracker/momo4');
+				/* Start tracking the resource. */
+				ws_tracker.startTracking('/ws-tracker/momo4');
+			})
+		</script>
+	</head>
+
+	<body>
+		<div id='bg' class='bg'>
+			<!-- This is automatically filled by the javascript -->
+		</div>
+
+		<div id='fg'>
+			<!-- This is automatically filled by the javascript -->
+		</div>
+	</body>
+</html>
