@@ -5,6 +5,9 @@ let ws_tracker = function() {
 	/** Reconnection function, in case the connection fails. */
 	let _reconnectFn = null;
 
+	/** Function used to clear every resource. */
+	let _clearFn = null;
+
 	/**
 	 * Handle receiving messages from the server.
 	 */
@@ -12,12 +15,23 @@ let ws_tracker = function() {
 		let res = JSON.parse(ev.data);
 
 		try {
+			cmd = res['cmd'];
 			id = res['id'];
 			value = res['value'];
 
-			tracker.setValue(id, value);
+			if (cmd == 'SET') {
+				tracker.setValue(id, value);
+			}
+			else if (cmd == 'CLEAR') {
+				if (_clearFn != null) {
+					_clearFn();
+				}
+			}
+			else {
+				console.log(`Invalid command ${cmd}`);
+			}
 		} catch (e) {
-			console.log(`Failed to parse the WebSocket response"`);
+			console.log('Failed to parse the WebSocket response');
 			console.log(e);
 		}
 	}
@@ -71,8 +85,18 @@ let ws_tracker = function() {
 		_reconnectFn();
 	}
 
+	/**
+	 * Set the callback called when a 'CLEAR' command is received.
+	 *
+	 * @param{fn} The callback.
+	 */
+	function _setClearFunction(fn) {
+		_clearFn = fn;
+	}
+
 	return {
 		'startTracking': _startTracking,
 		'stopTracking': _stopTracking,
+		'setClearFunction': _setClearFunction,
 	}
 }()

@@ -82,6 +82,13 @@ curl -X POST http://localhost:8000/tracker/dummy-game/key-item-3
 curl -X DELETE http://localhost:8000/tracker/dummy-game/key-item-3
 ```
 
+Lastly, sending a `DELETE` without an specific resource clears every resource in that game:
+
+```bash
+# Clear everything in the game
+curl -X DELETE http://localhost:8000/tracker/dummy-game
+```
+
 An application that want to update the tracker automatically would need to use some HTTP binding for the language, such as [`requests`](https://docs.python-requests.org/en/latest/) for Python or [`System.Net.Http.HttpClient`](https://docs.microsoft.com/en-us/dotnet/api/system.net.http.httpclient) for C#.
 
 ## Example

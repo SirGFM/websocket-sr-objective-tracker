@@ -149,21 +149,14 @@ func (r *request) get_tracker() {
 	writeData(data, r.w)
 }
 
-// set_value assign a game's, defined by the key, ID to the given value.
-func (s *server) set_value(key, id string, value interface{}) {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-
-	game, ok := s.data[key]
-	if !ok {
-		game = make(map[string]interface{})
-		s.data[key] = game
-	}
-
-	log.Printf("[%s]: %s=%v\n", key, id, value)
-	game[id] = value
-
-	// Send this value over a websocket
+// send_ws_cmd send a WebSocket command to every connection associated with
+// the game key. The allowed commands, specified in cmd, are 'SET', used to
+// report that a value was modified in the server, and 'CLEAR', used to
+// report that every value was cleared.
+//
+// NOTE: The server must be properly locked for writing, since the list of
+// WebSocket connections is be modified by this function.
+func (s *server) send_ws_cmd(key, cmd, id string, value interface{}) {
 	arr, ok := s.conns[key]
 	if !ok {
 		// No WebSocket connection for this game...
@@ -171,15 +164,17 @@ func (s *server) set_value(key, id string, value interface{}) {
 	}
 
 	payload := struct {
+		Cmd string `json:"cmd"`
 		ID string `json:"id"`
 		Value interface{} `json:"value"`
 	} {
+		Cmd: cmd,
 		ID: id,
 		Value: value,
 	}
 	data, err := json.Marshal(&payload)
 	if err != nil {
-		log.Printf("Couldn't encode the new data to JSON: (id: %s, value: %+v) %+v", id, value, err)
+		log.Printf("Couldn't encode the new data to JSON: (cmd: %s, id: %s, value: %+v) %+v", cmd, id, value, err)
 		return
 	}
 
@@ -189,6 +184,7 @@ func (s *server) set_value(key, id string, value interface{}) {
 	for i, conn := range arr {
 		err = conn.WriteMessage(gows.TextMessage, data)
 		if err != nil {
+			log.Printf("Failed to send msg: %+v", err)
 			rem = append(rem, i)
 		}
 	}
@@ -209,6 +205,24 @@ func (s *server) set_value(key, id string, value interface{}) {
 		rem = rem[:len(rem)-1]
 	}
 	s.conns[key] = arr
+}
+
+// set_value assign a game's, defined by the key, ID to the given value.
+func (s *server) set_value(key, id string, value interface{}) {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
+	game, ok := s.data[key]
+	if !ok {
+		game = make(map[string]interface{})
+		s.data[key] = game
+	}
+
+	log.Printf("[%s]: %s=%v\n", key, id, value)
+	game[id] = value
+
+	// Send this value over a websocket
+	s.send_ws_cmd(key, "SET", id, value)
 }
 
 // post_tracker create or update a value for a given game. The value may
@@ -253,8 +267,10 @@ func (r *request) post_tracker() {
 	r.reply_no_content()
 }
 
-// delete_tracker assign a vlue in the given game to false. Everything
-// after the game in the URI is assumed to be the value's name.
+// delete_tracker assign a value in the given game to false. Everything
+// after the game in the URI is assumed to be the value's name. If no
+// resource is given (ie., if the URI is something like '/tracker/<name>'),
+// then every resource is removed from that game.
 func (r *request) delete_tracker() {
 	key := r.uri[1]
 
@@ -264,9 +280,24 @@ func (r *request) delete_tracker() {
 		return
 	}
 
-	id := strings.Join(r.uri[2:], "/")
+	if len(r.uri) == 2 {
+		// Remove every resource in this game
+		r.s.mutex.Lock()
+		game := r.s.data[key]
+		for id := range game {
+			delete(game, id)
+		}
 
-	r.s.set_value(key, id, false)
+		// Send a clear command over a websocket
+		r.s.send_ws_cmd(key, "CLEAR", "", nil)
+		r.s.mutex.Unlock()
+	} else {
+		// Remove only the requested resource
+		id := strings.Join(r.uri[2:], "/")
+
+		r.s.set_value(key, id, false)
+	}
+
 	r.reply_no_content()
 }
 
