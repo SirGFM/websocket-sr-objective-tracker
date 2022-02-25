@@ -123,3 +123,23 @@ python3 simple-request.py localhost:8000 /tracker/example/red DELETE
 ```
 
 To visualize the changes live, simply access its page (http://localhost:8000/example) on a browser.
+
+## WebSocket connection
+
+A tracker may either send GET requests to update itself manually or it may establish a WebSocket connection to get updated by the server whenever a new value is set.
+
+The WebSocket may be accessed in `ws://<server-url>/ws-tracker/<game>`. For example, to establish a WebSocket connection to a game "example" registered to a local server running in port 8000, the WebSocket connection should be established to `ws://localhost:8000/ws-tracker/example`.
+
+Every WebSocket message send the following object as its payload:
+
+```
+{
+	"cmd": "command-as-a-string",
+	"id": "resource-id-as-a-string",
+	"value": any-value
+}
+```
+
+Whenever a value is updated, regardless of whether its was "set" or "cleared", the server sends a payload with `cmd` set to `SET`. `id` is set to whichever resource was modified in the game and `value` is set to the value that was set. A tracker may support whichever type it desires, but the currently implemented WebSocket client only supports booleans, for setting and releasing a resource, and text, for setting textual values.
+
+If a `DELETE` is sent to a game, clearing up every value in the server, the server sends a WebSocket message with `cmd` set to `CLEAR`. In this case, `id` and `value` should be ignored. The WebSocket client is able to handle these messages, but the tracker page must configure a clean up function by calling `ws_tracker.setClearFunction`.
